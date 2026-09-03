@@ -54,4 +54,4 @@ def bmi():
 
 
 if __name__ == "__main__":
-        app.run(host="0.0.0.0", port=8080)  # nosec B104 - binding to all interfaces is required for Docker port mapping to work
+    app.run(host="0.0.0.0", port=8080)  # nosec B104 - binding to all interfaces is required for Docker port mapping to work
