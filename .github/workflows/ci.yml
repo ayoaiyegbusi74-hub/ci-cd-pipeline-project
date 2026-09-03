@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        working-directory: app
+        run: |
+          pip install -r requirements.txt
+          pip install flake8 bandit pip-audit
+
+      - name: Lint with flake8
+        working-directory: app
+        run: flake8 . --max-line-length=100 --exclude=__pycache__,.pytest_cache
+
+      - name: Security scan - code (bandit)
+        working-directory: app
+        run: bandit -r . -x ./test_app.py
+
+      - name: Security scan - dependencies (pip-audit)
+        working-directory: app
+        run: pip-audit -r requirements.txt
+
+      - name: Run tests
+        working-directory: app
+        run: pytest -v
+
+      - name: Build Docker image
+        working-directory: app
+        run: docker build -t bmi-app:ci .
+
+      - name: Run container and smoke test
+        run: |
+          docker run -d --name bmi-app-ci -p 8080:8080 bmi-app:ci
+          sleep 5
+          curl --fail http://localhost:8080/health
+
+      - name: Stop and remove test container
+        if: always()
+        run: docker rm -f bmi-app-ci
